@@ -1,10 +1,8 @@
 ﻿using MediatR;
-using wallet.api.Features.Users.Dtos;
 
 namespace wallet.api.Features.Users.RequestHandling;
 
-
-public class RegisterUserRequestHandler : IRequestHandler<RegisterUserRequest, CreateUserDto>
+public class SignInRequestHandling : IRequestHandler<SignInRequest, string>
 {
     private readonly ILogger<RegisterUserRequestHandler> _logger;
     private readonly IIdentityUserService _service;
@@ -12,10 +10,10 @@ public class RegisterUserRequestHandler : IRequestHandler<RegisterUserRequest, C
     /// <summary>
     ///     Initialize a new instance
     /// </summary>
-    public RegisterUserRequestHandler(IServiceProvider serviceProvider)
+    public SignInRequestHandling(IServiceProvider serviceProvider)
     {
-        _logger = serviceProvider.GetRequiredService<ILogger<RegisterUserRequestHandler>>();
         _service = serviceProvider.GetRequiredService<IIdentityUserService>();
+        _logger = serviceProvider.GetRequiredService<ILogger<RegisterUserRequestHandler>>();
     }
 
     /// <summary>
@@ -25,11 +23,11 @@ public class RegisterUserRequestHandler : IRequestHandler<RegisterUserRequest, C
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationCustomException"></exception>
-    public async Task<CreateUserDto> Handle(RegisterUserRequest request, CancellationToken cancellationToken)
+    public async Task<string> Handle(SignInRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var result = await _service.CreateUser(request.Dto);
+            var result = await _service.SignIn(request.Dto, cancellationToken);
             return result;
         }
         catch (Exception e)

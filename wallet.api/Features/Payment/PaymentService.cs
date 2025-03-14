@@ -1,35 +1,30 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
-using wallet.api.Features.Core;
-using wallet.api.Features.DataAccess;
+﻿using System.Linq.Expressions;
 using wallet.api.Features.DataAccess.Models;
+using wallet.api.Features.DataAccess.UOW;
 using wallet.api.Features.Payment.Dtos;
 
 namespace wallet.api.Features.Payment;
 
 public class PaymentService : IPaymentService
 {
-    private readonly IHttpContextAccessor _contextAccessor;
-    private readonly WalletDbContext _dbContext;
-    private readonly IMapper _mapper;
-
-    public PaymentService(IHttpContextAccessor contextAccessor, WalletDbContext dbContext, IMapper mapper)
+    private readonly IUnitOfWork _unitOfWork;
+    public PaymentService(IUnitOfWork unitOfWork)
     {
-        _contextAccessor = contextAccessor;
-        _dbContext = dbContext;
-        _mapper = mapper;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<PaymentStatus> CreatePayment(PaymentDto paymentDto)
     {
-        using var transaction = _dbContext.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
-        try
+        var userBalance = await _unitOfWork.UserBalanceRepository.GetByIdWithouthTracking(paymentDto.UserBalanceId);
+        var payment = new PaymentEntity()
         {
-            var userBalance = await _dbContext.UserBalances.FirstOrDefaultAsync(x => x.Id == paymentDto.UserBalanceId);
-            var payment = _mapper.Map<PaymentEntity>(paymentDto);
-            var status = PaymentStatus.Pending;
-
+            UserId = paymentDto.UserId,
+            UserBalanceId = paymentDto.UserBalanceId,
+            Amount = paymentDto.Amount
+        };
+        var status = PaymentStatus.Pending;
+        if (userBalance != null)
+        {
             if (paymentDto.ExpressionType == ExpressionType.Subtract)
             {
                 if (userBalance!.Balance - paymentDto.Amount > 0)
@@ -40,19 +35,12 @@ public class PaymentService : IPaymentService
 
             if (paymentDto.ExpressionType == ExpressionType.Add)
                 status = PaymentStatus.Completed;
-
-            payment.UserId = _contextAccessor.GetUserId();
-            payment.PaymentStatus = status;
-            await _dbContext.Payments.AddAsync(payment);
-            await _dbContext.SaveChangesAsync();
-            await transaction.RollbackAsync();
-            return payment.PaymentStatus;
-
         }
-        catch (Exception)
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+
+        payment.PaymentStatus = status;
+        payment.CreatedAt = DateTime.UtcNow;
+        payment.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.PaymentRepository.AddAsync(payment);
+        return payment.PaymentStatus;
     }
 }

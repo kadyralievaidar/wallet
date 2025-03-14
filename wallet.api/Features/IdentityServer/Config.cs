@@ -11,23 +11,13 @@ public static class Config
         new IdentityResource[]
         {
             new IdentityResources.OpenId(),
-            new IdentityResources.Profile(),
-            new IdentityResource()
-            {
-                Name = "verification",
-                UserClaims = new List<string>
-                {
-                    JwtClaimTypes.Email,
-                    JwtClaimTypes.EmailVerified,
-                    Consts.UserId
-                }
-            }
+            new IdentityResources.Profile()
         };
 
     public static IEnumerable<ApiScope> ApiScopes =>
         new ApiScope[]
         {
-            new ApiScope(name: "api1", displayName: "My API")
+            new ApiScope(name: "wallet", displayName: "wallet api")
         };
 
     public static IEnumerable<Client> Clients =>
@@ -35,38 +25,36 @@ public static class Config
         {
             new Client
             {
-                ClientId = "client",
-
-                AllowedGrantTypes = GrantTypes.ClientCredentials,
-
-                ClientSecrets =
-                {
-                    new Secret("secret".Sha256())
-                },
-
-                AllowedScopes = { "api1" }
-            },
-
-            new Client
-            {
-                ClientId = "web",
-                ClientSecrets = { new Secret("secret".Sha256()) },
-
-                AllowedGrantTypes = GrantTypes.Code,
-                
-                RedirectUris = { "https://localhost:5002/signin-oidc" },
-
-                PostLogoutRedirectUris = { "https://localhost:5002/signout-callback-oidc" },
-
+                ClientId = "wallet",
+                ClientName = "wallet-api",
+                AccessTokenLifetime = 60 * 60 * 24,
+                AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
+                ClientSecrets = { new Secret("super-secret-key".Sha256()) },
+                RedirectUris = { "https://localhost:7001/signin-oidc" },
+                AlwaysIncludeUserClaimsInIdToken = true,
+                PostLogoutRedirectUris = { "https://localhost:7001/signout-callback-oidc" },
                 AllowOfflineAccess = true,
 
                 AllowedScopes =
                 {
-                    IdentityServerConstants.StandardScopes.OpenId,
-                    IdentityServerConstants.StandardScopes.Profile,
-                    "verification",
-                    "api1"
+                    "openid",
+                    "profile",
+                    "wallet"
                 }
             }
         };
+
+    internal static IEnumerable<ApiScope> GetApiScopes()
+    {
+        return new[]
+        {
+            new ApiScope(IdentityServerConstants.LocalApi.ScopeName),
+            new ApiScope
+            (
+                "wallet",
+                "openid",
+                new[] { JwtClaimTypes.Name, JwtClaimTypes.Role, JwtClaimTypes.Email, JwtClaimTypes.Id, Consts.Sub}
+            )
+        };
+    }
 }

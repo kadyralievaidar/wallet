@@ -12,7 +12,7 @@ using wallet.api.Features.DataAccess;
 namespace wallet.api.Migrations
 {
     [DbContext(typeof(WalletDbContext))]
-    [Migration("20250312144612_Initial")]
+    [Migration("20250313131325_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -168,9 +168,6 @@ namespace wallet.api.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -180,9 +177,6 @@ namespace wallet.api.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
-
-                    b.Property<DateTime>("LastModifiedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -241,16 +235,24 @@ namespace wallet.api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("UserBalanceId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserBalanceId");
 
                     b.HasIndex("UserId");
 
@@ -265,6 +267,15 @@ namespace wallet.api.Migrations
 
                     b.Property<decimal>("Balance")
                         .HasColumnType("numeric");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -329,6 +340,12 @@ namespace wallet.api.Migrations
 
             modelBuilder.Entity("wallet.api.Features.DataAccess.Models.PaymentEntity", b =>
                 {
+                    b.HasOne("wallet.api.Features.DataAccess.Models.UserBalance", "UserBalance")
+                        .WithMany()
+                        .HasForeignKey("UserBalanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("wallet.api.Features.DataAccess.Models.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -336,6 +353,8 @@ namespace wallet.api.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+
+                    b.Navigation("UserBalance");
                 });
 
             modelBuilder.Entity("wallet.api.Features.DataAccess.Models.UserBalance", b =>

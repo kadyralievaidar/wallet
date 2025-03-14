@@ -27,7 +27,6 @@ public class UserController : ControllerBase
     /// <param name="model">Gets the model from form</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPost("register")]
-    //[Authorize(Roles = "SuperAdmin, Admin, BranchAdmin")]
     [ProducesResponseType(typeof(CreateUserDto), (int)HttpStatusCode.OK)]
     public async Task<IActionResult> Register(CreateUserDto model, CancellationToken cancellationToken) =>
         Ok(await _mediator.Send(new RegisterUserRequest(model), cancellationToken));
@@ -39,7 +38,17 @@ public class UserController : ControllerBase
     [ProducesResponseType((int)HttpStatusCode.OK)]
     public async Task<IActionResult> LogOff()
     {
-        await _signInManager.SignOutAsync();
+        await _mediator.Send(new LogOutRequest());
         return Ok();
+    }
+
+    /// <summary>
+    ///     The logout endpoint
+    /// </summary>
+    [HttpPost("sign-in")]
+    [ProducesResponseType((int)HttpStatusCode.OK)]
+    public async Task<IActionResult> SignIn(CreateUserDto dto, CancellationToken cancellationToken)
+    {
+        return Ok(await _mediator.Send(new SignInRequest(dto), cancellationToken));
     }
 }

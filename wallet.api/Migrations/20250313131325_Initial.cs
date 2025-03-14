@@ -32,8 +32,6 @@ namespace wallet.api.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -161,15 +159,39 @@ namespace wallet.api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "UserBalances",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Balance = table.Column<decimal>(type: "numeric", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserBalances", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserBalances_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Payments",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    PaymentStatus = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserBalanceId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    PaymentStatus = table.Column<int>(type: "integer", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -180,23 +202,10 @@ namespace wallet.api.Migrations
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "UserBalances",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Balance = table.Column<decimal>(type: "numeric", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserBalances", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_UserBalances_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
+                        name: "FK_Payments_UserBalances_UserBalanceId",
+                        column: x => x.UserBalanceId,
+                        principalTable: "UserBalances",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -239,6 +248,11 @@ namespace wallet.api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Payments_UserBalanceId",
+                table: "Payments",
+                column: "UserBalanceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Payments_UserId",
                 table: "Payments",
                 column: "UserId");
@@ -271,10 +285,10 @@ namespace wallet.api.Migrations
                 name: "Payments");
 
             migrationBuilder.DropTable(
-                name: "UserBalances");
+                name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "AspNetRoles");
+                name: "UserBalances");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
